@@ -1,5 +1,5 @@
 import styles from './page.module.css'
-import { BaseN, Combination, Permutation } from 'js-combinatorics';
+import { BaseN } from 'js-combinatorics';
 
 const seed = {
   static: {
@@ -9,23 +9,39 @@ const seed = {
   sets: {
     pitches: ['A', 'B', 'C', 'D', 'E'],
     timeSignatures: ['4/4', '6/8', '5/16'],
-    divisionsInMeasure: ['2', '4', '5'],
+    divisionsInMeasure: ['3', '4', '5'],
   },
 };
+
+const repeat = (arr, n) => [].concat(...Array(n).fill(arr));
 
 const generate = () => {
   for (let key in seed.sets) {
     console.log(seed.sets[key].length)
   }
-  const pitches = new BaseN(seed.sets.pitches, seed.static.parts)
-  const timeSignatures = new BaseN(seed.sets.timeSignatures, seed.static.parts)
-  const tuplets = new BaseN(seed.sets.divisionsInMeasure, seed.static.parts)
-  console.log({ pitches, timeSignatures, tuplets })
-  // TODO: pitches.length % timeSignatures.length % tuplets.length
+  const basePitches = [...new BaseN(seed.sets.pitches, seed.static.parts)]
+  const baseTimeSignatures = [...new BaseN(seed.sets.timeSignatures, seed.static.parts)]
+  const baseDivisions = [...new BaseN(seed.sets.divisionsInMeasure, seed.static.parts)]
+  const longestBase = [basePitches.length, baseTimeSignatures.length, baseDivisions.length].reduce((acc, current) => current > acc ? current : acc, 0)
+  const shortestBase = [basePitches.length, baseTimeSignatures.length, baseDivisions.length].reduce((acc, current) => current < acc ? current : acc, longestBase)
+  const modulo = basePitches.length % baseTimeSignatures.length % baseDivisions.length
+  const multiple = Math.ceil(longestBase / shortestBase)
+  console.log(parseInt(multiple.toString()))
+  const pitches = basePitches.length > baseTimeSignatures.length || basePitches.length > baseDivisions.length
+      ? basePitches
+    : repeat(basePitches, multiple).slice(0, longestBase)
+  const timeSignatures = baseTimeSignatures.length > basePitches.length || baseTimeSignatures.length > baseDivisions.length
+    ? baseTimeSignatures
+    : repeat(baseTimeSignatures, multiple).slice(0, longestBase)
+  const tuplets = baseDivisions.length > basePitches.length || baseDivisions.length > baseTimeSignatures.length
+    ? baseDivisions
+    : repeat(baseDivisions, multiple).slice(0, longestBase)
+  console.log(timeSignatures)
+
   return {
-    pitches: [...pitches],
-    timeSignatures: [...timeSignatures],
-    tuplets: [...tuplets],
+    pitches,
+    timeSignatures,
+    tuplets,
   }
 }
 
@@ -40,6 +56,7 @@ export default function Home() {
             key={`tsigset-${index}`}
             className={styles.timeSignatureSet}
           >
+            <label className={styles.systemLabel}>{index + 1}</label>
             {tsigSet.map((tsig, tsigIndex) => (
               <div
                 key={`tsigset-${index}-tsig-${tsigIndex}`}
